@@ -1,0 +1,43 @@
+#gcc 매크로 정의
+CC=gcc
+#동적라이브러리를 사용하기 위하 ln 매크로 정의
+LN=ln
+#-sf 매크로 정의
+SF=-sf
+#gcc에 들어갈 조건을 매크로로 정의 이때 lpthread는 thread를 사용하기 위해 붙여준 것이다.
+CFLAGS=-lpthread -fPIC -Wall -g –c
+#gcc에 들어갈 조건을 매크로로 정의
+LFLAGS=-g -shared -Wl,-soname,
+#매인 함수를 컴파일 할 때 사용할 조건을 매크로로 정의
+LIBS=-L. –lmyio
+#라이브러리명을 지정 동적 라이브러리이기 때문에 확장자를 .so로 지정
+LIBTARGET=libmyio.so
+#.so.00파일을 참조하기 위해 매크로 치환 사용
+LIBTARGET0=$(LIBTARGET:.so=.so.0.0)
+#현재경로를 매크로로 정의
+PWD=$$PWD
+#컴파일할 소스를 매크로로 정의
+SRCS=pid1.c pid2.c
+#.o 파일을 참조하기 위해 매크로 치환 사용
+OBJS=$(SRCS:.c=.o)
+
+.SUFFIXES:.c.o
+.c.o:
+	$(CC) $(CFLAGS) $(SRCS)	#
+
+#여러 개의 파일을 한꺼번에 빌드 하기 위해 타겟을 all로 정의
+all: PID
+#매인 함수 파일 PID 빌드 규칙 정의
+PID: main.o $(LIBTARGET)
+	$(CC) $(LFLAGS)$(LIBTARGET) -o $(LIBTARGET0) $(OBJS) -lc
+	$(CC) -o $@ main.c $(LIBS)
+	#생성된 공유라이브러리를 사용하기 위해 경로 추가
+	@echo $(PWD) >> /etc/ld.so.conf.d/my.conf
+	${ldconifg}
+	@echo done
+
+$(LIBTARGET): $(OBJS)
+	$(LN) $(SF) $(LIBTARGET0) $@
+
+clean:
+	rm -rf PID *.o $(LIBTARGET)
